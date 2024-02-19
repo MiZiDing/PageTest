@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>1</title>
+</head>
+
+<body>
+    <h1>1</h1>
+    <button onclick="showNotification()">click</button>
+
+    <script>
+        function showNotification() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === 'granted') {
+                        // 用户允许推送通知
+                        console.log('Permission granted');
+                    } else {
+                        // 用户拒绝推送通知或浏览器不支持
+                        console.warn('Permission denied');
+                    }
+                });
+            } else {
+                console.error('Notifications not supported in this browser');
+            }
+        }
+    </script>
+</body>
+
+</html>
