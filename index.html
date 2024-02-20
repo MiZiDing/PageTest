@@ -1,29 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>1</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push Notifications Demo</title>
 </head>
 
 <body>
-    <h1>1</h1>
-    <button onclick="showNotification()">click</button>
-
+    <h1>Push Notifications Demo</h1>
+    <button onclick="a()">订阅</button>
     <script>
-        function showNotification() {
-            if ('Notification' in window) {
-                Notification.requestPermission().then(function (permission) {
-                    if (permission === 'granted') {
-                        // 用户允许推送通知
-                        console.log('Permission granted');
-                    } else {
-                        // 用户拒绝推送通知或浏览器不支持
-                        console.warn('Permission denied');
-                    }
-                });
-            } else {
-                console.error('Notifications not supported in this browser');
-            }
+        // 生成 VAPID 密钥对（applicationServerKey）
+        function generateVapidKeys() {
+            const vapidKeys = crypto.subtle.generateKey(
+                { name: 'ECDH', namedCurve: 'P-256' },
+                true,
+                ['deriveBits']
+            );
+
+            return vapidKeys.then(function (keys) {
+                return crypto.subtle.exportKey('raw', keys.publicKey);
+            }).then(function (rawKey) {
+                return urlBase64Encode(rawKey);
+            });
+        }
+
+        function urlBase64Encode(buffer) {
+            const base64String = btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
+            return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function a() {
+            // 使用生成的 VAPID 公钥
+            generateVapidKeys().then(function (applicationServerKey) {
+                console.log('Generated applicationServerKey:', applicationServerKey);
+
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+
+                    navigator.serviceWorker.register('service-worker.js')
+                        .then(function (registration) {
+                            console.log('Service Worker registered with scope:', registration.scope);
+
+                            // 请求通知权限并获取订阅信息
+                            return registration.pushManager.subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: applicationServerKey
+                            });
+                        })
+                        .then(function (subscription) {
+                            // 将订阅信息发送到服务器
+                            sendSubscriptionToServer(subscription);
+                        })
+                        .catch(function (error) {
+                            console.error('Service Worker registration failed:', error);
+                        });
+                }
+
+            }).catch(function (error) {
+                console.error('Error generating VAPID keys:', error);
+            });
+        }
+
+
+        function sendSubscriptionToServer(subscription) {
+            // 在这里将订阅信息发送到服务器
+            console.log('Subscription:', subscription);
         }
     </script>
 </body>
